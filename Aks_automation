@@ -1,0 +1,47 @@
+# Function to fetch supported Kubernetes versions from website
+function Get-KubernetesVersions {
+    $url = "https://kubernetes.io/versions/"
+    $response = Invoke-WebRequest -Uri $url
+    $content = $response.Content
+
+    # Extracting versions from the website content
+    $versions = $content | Select-String -Pattern '(?<=<h3 id="v)(.*?)(?=">)' -AllMatches | ForEach-Object { $_.Matches.Value }
+    return $versions
+}
+
+# Function to get AKS cluster versions
+function Get-AKSKubernetesVersions {
+    $aksVersions = az aks get-versions --output json | ConvertFrom-Json
+    return $aksVersions.orchestrators.value | ForEach-Object { $_.orchestratorVersion }
+}
+
+# Compare Kubernetes versions
+function Compare-Versions {
+    param (
+        [string[]]$webVersions,
+        [string[]]$aksVersions
+    )
+
+    Write-Host "Supported Kubernetes Versions:"
+    Write-Host "Web: $($webVersions -join ', ')"
+    Write-Host "AKS: $($aksVersions -join ', ')"
+
+    # Compare versions
+    foreach ($version in $webVersions) {
+        if ($aksVersions -contains $version) {
+            Write-Host "Version $version is supported by AKS"
+        } else {
+            Write-Host "Version $version is not supported by AKS"
+        }
+    }
+}
+
+# Main script
+$webVersions = Get-KubernetesVersions
+$aksVersions = Get-AKSKubernetesVersions
+
+if ($webVersions -and $aksVersions) {
+    Compare-Versions -webVersions $webVersions -aksVersions $aksVersions
+} else {
+    Write-Host "Failed to retrieve Kubernetes versions. Check network connectivity and try again."
+}
