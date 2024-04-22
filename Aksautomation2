@@ -1,0 +1,38 @@
+# Define the URL of the Azure Kubernetes Service (AKS) version support page
+$url = "https://docs.microsoft.com/en-us/azure/aks/supported-versions"
+
+# Send a request to the URL and parse the HTML content
+$response = Invoke-WebRequest -Uri $url
+
+# Extract the table rows containing AKS version information
+$versionTable = $response.ParsedHtml.getElementsByTagName('table') | Where-Object { $_.className -eq 'sgmltable' }
+$rows = $versionTable.getElementsByTagName('tr')
+
+# Initialize an array to store the outdated versions
+$outdatedVersions = @()
+
+# Iterate through each row in the table (skipping the header row)
+for ($i = 1; $i -lt $rows.length; $i++) {
+    $cols = $rows[$i].getElementsByTagName('td')
+
+    if ($cols.length -ge 5) {
+        $version = $cols[0].innerText.Trim()
+        $outOfDate = $cols[4].innerText.Trim()
+
+        # Check if the version is out of date or going to be out of date
+        if ($outOfDate -eq 'Out of support' -or $outOfDate -eq 'Out of support soon') {
+            $outdatedVersions += [PSCustomObject]@{
+                Version = $version
+                OutOfDateStatus = $outOfDate
+            }
+        }
+    }
+}
+
+# Display the outdated AKS versions
+if ($outdatedVersions.Count -gt 0) {
+    Write-Host "Outdated AKS Versions:"
+    $outdatedVersions | Format-Table Version, OutOfDateStatus -AutoSize
+} else {
+    Write-Host "No outdated AKS versions found."
+}
