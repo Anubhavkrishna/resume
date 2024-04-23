@@ -1,0 +1,24 @@
+# Define the URL of the AKS supported versions webpage
+$url = "https://docs.microsoft.com/en-us/azure/aks/supported-versions"
+
+# Fetch the webpage content
+$response = Invoke-WebRequest -Uri $url
+$htmlContent = $response.Content
+
+# Define the regular expression pattern to match version rows
+$pattern = '<tr>\s*<td>([\d\.]+)</td>\s*<td>([\d\.]+)</td>\s*<td>([\d\.]+)</td>\s*</tr>'
+
+# Find all matches of the pattern in the HTML content
+$matches = [regex]::Matches($htmlContent, $pattern)
+
+if ($matches.Count -gt 0) {
+    # Output the matched version data
+    foreach ($match in $matches) {
+        $version = $match.Groups[1].Value
+        $kubernetesVersion = $match.Groups[2].Value
+        $releaseDate = $match.Groups[3].Value
+        Write-Output "Version: $version, Kubernetes Version: $kubernetesVersion, Release Date: $releaseDate"
+    }
+} else {
+    Write-Output "No version data found on the webpage."
+}
