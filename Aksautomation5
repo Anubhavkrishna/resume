@@ -1,0 +1,49 @@
+To pull the supported versions of Azure Kubernetes Service (AKS) from the AKS supported versions webpage using a PowerShell script, you can use web scraping techniques. Here's a step-by-step guide on how to achieve this:
+
+1. **Install Required PowerShell Module**:
+   First, ensure you have the `Invoke-WebRequest` cmdlet available in your PowerShell session. This cmdlet is used to make HTTP requests and retrieve web pages.
+
+2. **Identify the URL**:
+   Find the URL of the AKS supported versions webpage. As of my last update, this could be found on the official Microsoft Azure documentation site.
+
+3. **Write the PowerShell Script**:
+   Use PowerShell to fetch and parse the content of the webpage to extract the supported versions.
+
+   ```powershell
+   # Specify the URL of the AKS supported versions webpage
+   $url = "https://docs.microsoft.com/en-us/azure/aks/supported-versions"
+
+   # Use Invoke-WebRequest to fetch the webpage content
+   $response = Invoke-WebRequest -Uri $url
+
+   # Check if the request was successful (status code 200)
+   if ($response.StatusCode -eq 200) {
+       # Extract the content from the response
+       $content = $response.Content
+
+       # Use regular expressions or HTML parsing to extract the AKS versions
+       $versions = $content | Select-String -Pattern '1\.([0-9]+\.[0-9]+\.[0-9]+)' -AllMatches | 
+                   ForEach-Object { $_.Matches } | 
+                   ForEach-Object { $_.Value }
+
+       # Output the extracted versions
+       Write-Output "Supported AKS Versions:"
+       $versions
+   } else {
+       Write-Error "Failed to retrieve webpage. Status code: $($response.StatusCode)"
+   }
+   ```
+
+4. **Understanding the Script**:
+   - The script uses `Invoke-WebRequest` to fetch the content of the specified URL.
+   - If the request is successful (HTTP status code 200), it extracts the HTML content.
+   - The `Select-String` cmdlet with a regex pattern (`'1\.([0-9]+\.[0-9]+\.[0-9]+)'`) is used to extract version numbers matching the format `1.x.x.x`.
+   - The extracted versions are then displayed as output.
+
+5. **Run the Script**:
+   Save the above script into a `.ps1` file and execute it in your PowerShell environment. Ensure your PowerShell session has internet access to fetch the webpage.
+
+6. **Handling Updates**:
+   Note that the script relies on the structure of the webpage and its content. If the webpage structure changes, you may need to adjust the script accordingly (e.g., update the regex pattern or HTML parsing logic).
+
+Always be mindful of website terms of use and consider whether there are official APIs available for accessing the information to avoid potential issues with web scraping.
