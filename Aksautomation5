@@ -47,3 +47,47 @@ To pull the supported versions of Azure Kubernetes Service (AKS) from the AKS su
    Note that the script relies on the structure of the webpage and its content. If the webpage structure changes, you may need to adjust the script accordingly (e.g., update the regex pattern or HTML parsing logic).
 
 Always be mindful of website terms of use and consider whether there are official APIs available for accessing the information to avoid potential issues with web scraping.
+
+
+
+
+# Specify the URL of the AKS supported versions webpage
+$url = "https://docs.microsoft.com/en-us/azure/aks/supported-versions"
+
+# Use Invoke-WebRequest to fetch the webpage content
+$response = Invoke-WebRequest -Uri $url
+
+# Check if the request was successful (status code 200)
+if ($response.StatusCode -eq 200) {
+    # Extract the content from the response
+    $content = $response.Content
+
+    # Load the content into an HTML object
+    $htmlDocument = New-Object -ComObject "HTMLFile"
+    $htmlDocument.IHTMLDocument2_write($content)
+
+    # Find all table rows (<tr>) containing version and end of life data
+    $rows = $htmlDocument.getElementsByTagName('tr')
+
+    # Initialize an array to store the version and end of life data
+    $versionInfo = @()
+
+    # Iterate through each row to extract version and end of life
+    foreach ($row in $rows) {
+        $version = $row.getElementsByTagName('td') | Where-Object { $_.className -eq 'devsite-table-td' } | Select-Object -First 1 -ExpandProperty innerText
+        $endOfLife = $row.getElementsByTagName('td') | Where-Object { $_.className -eq 'devsite-table-td' } | Select-Object -Last 1 -ExpandProperty innerText
+
+        # Skip rows that don't contain version and end of life data
+        if (-not [string]::IsNullOrWhiteSpace($version) -and -not [string]::IsNullOrWhiteSpace($endOfLife)) {
+            $versionInfo += [PSCustomObject]@{
+                'Version' = $version
+                'EndOfLife' = $endOfLife
+            }
+        }
+    }
+
+    # Output the extracted version and end of life data
+    Write-Output $versionInfo
+} else {
+    Write-Error "Failed to retrieve webpage. Status code: $($response.StatusCode)"
+}
